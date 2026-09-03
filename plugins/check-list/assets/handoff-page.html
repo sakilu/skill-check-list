@@ -1,0 +1,569 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
+<style>
+  :root{
+    --bg:#F5F6F8; --surface:#FFFFFF; --surface-2:#EDEFF3; --surface-3:#E3E7ED;
+    --ink:#1A1D24; --ink-2:#4A5261; --ink-3:#7A8496;
+    --rule:#DDE1E8; --rule-strong:#C3CAD5;
+    --accent:#33518F; --accent-soft:#E8ECF6;
+    --s-todo:#7A8496; --s-doing:#B26A00; --s-done:#2E7D4F; --s-blocked:#C0392B;
+    --s-todo-bg:#EDEFF3; --s-doing-bg:#FBF0DE; --s-done-bg:#E3F1E9; --s-blocked-bg:#FAE6E3;
+    --sans:"Noto Sans TC",-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft JhengHei",sans-serif;
+    --serif:"Noto Serif TC",Georgia,"Times New Roman","Microsoft JhengHei",serif;
+    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#12141A; --surface:#1A1D25; --surface-2:#22262F; --surface-3:#2B303A;
+      --ink:#E8EAEF; --ink-2:#A3ACBB; --ink-3:#6F7887;
+      --rule:#2C313B; --rule-strong:#3B424E;
+      --accent:#8AA3DE; --accent-soft:#1E2637;
+      --s-todo:#8892A2; --s-doing:#D99A2B; --s-done:#4FB07A; --s-blocked:#E4695C;
+      --s-todo-bg:#242832; --s-doing-bg:#332917; --s-done-bg:#172A20; --s-blocked-bg:#301E1C;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12141A; --surface:#1A1D25; --surface-2:#22262F; --surface-3:#2B303A;
+    --ink:#E8EAEF; --ink-2:#A3ACBB; --ink-3:#6F7887;
+    --rule:#2C313B; --rule-strong:#3B424E;
+    --accent:#8AA3DE; --accent-soft:#1E2637;
+    --s-todo:#8892A2; --s-doing:#D99A2B; --s-done:#4FB07A; --s-blocked:#E4695C;
+    --s-todo-bg:#242832; --s-doing-bg:#332917; --s-done-bg:#172A20; --s-blocked-bg:#301E1C;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--bg); color:var(--ink); font-family:var(--sans);
+    font-size:15px; line-height:1.7; margin:0;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px; margin:0 auto; padding:0 24px 72px}
+
+  /* ---- 表單抬頭 ---- */
+  .masthead{border-bottom:2px solid var(--rule-strong); padding:28px 0 18px; margin-bottom:26px}
+  .eyebrow{
+    font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--ink-3); display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+  }
+  .eyebrow .sep{color:var(--rule-strong)}
+  h1{
+    font-family:var(--serif); font-weight:700; font-size:clamp(26px,3.4vw,38px);
+    line-height:1.25; margin:10px 0 4px; text-wrap:balance; letter-spacing:.01em;
+  }
+  .summary{color:var(--ink-2); max-width:62ch; margin:0 0 20px}
+
+  .meta-grid{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:1px; background:var(--rule); border:1px solid var(--rule); margin-bottom:18px;
+  }
+  .meta-cell{background:var(--surface); padding:10px 14px}
+  .meta-k{
+    font-family:var(--mono); font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--ink-3); display:block; margin-bottom:2px;
+  }
+  .meta-v{font-size:14px; font-weight:500; font-variant-numeric:tabular-nums}
+
+  /* ---- 分段進度 ---- */
+  .progress{display:flex; align-items:center; gap:14px; flex-wrap:wrap}
+  .bar{display:flex; height:10px; flex:1 1 260px; min-width:200px; background:var(--surface-2); overflow:hidden}
+  .bar span{display:block; transition:flex-grow .35s ease}
+  .legend{display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--ink-2)}
+  .legend b{font-variant-numeric:tabular-nums; font-weight:700; color:var(--ink)}
+  .dot{display:inline-block; width:8px; height:8px; margin-right:5px; vertical-align:baseline}
+
+  /* ---- 版面 ---- */
+  .cols{display:grid; grid-template-columns:minmax(280px,360px) 1fr; gap:40px; align-items:start}
+  @media (max-width:900px){ .cols{grid-template-columns:1fr; gap:32px} }
+
+  .sec-title{
+    font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--ink-3); border-bottom:1px solid var(--rule); padding-bottom:7px; margin:0 0 16px;
+    display:flex; justify-content:space-between; align-items:baseline; gap:10px;
+  }
+
+  /* ---- 脈絡欄 ---- */
+  .ctx{display:flex; flex-direction:column; gap:22px}
+  .ctx-item h3{
+    font-size:13px; font-weight:700; margin:0 0 5px; color:var(--ink);
+    display:flex; align-items:center; gap:7px;
+  }
+  .ctx-item h3::before{content:""; width:3px; height:13px; background:var(--accent); flex:none}
+  .ctx-body{color:var(--ink-2); font-size:14px; margin:0; white-space:pre-wrap}
+  .ctx-body code{
+    font-family:var(--mono); font-size:12.5px; background:var(--surface-2);
+    padding:1px 5px; color:var(--ink);
+  }
+
+  /* ---- 任務 ---- */
+  .tasks{display:flex; flex-direction:column; gap:10px}
+  .task{
+    background:var(--surface); border:1px solid var(--rule); border-left:3px solid var(--s-todo);
+    display:grid; grid-template-columns:auto 1fr; gap:0 13px; padding:13px 16px;
+  }
+  .task[data-state="doing"]{border-left-color:var(--s-doing)}
+  .task[data-state="done"]{border-left-color:var(--s-done)}
+  .task[data-state="blocked"]{border-left-color:var(--s-blocked)}
+
+  .tick{
+    grid-row:1/span 2; align-self:start; margin-top:2px;
+    width:22px; height:22px; padding:0; flex:none; cursor:pointer;
+    background:var(--surface); border:1.5px solid var(--rule-strong); color:var(--s-done);
+    font-size:13px; line-height:1; display:grid; place-items:center; font-family:var(--mono);
+  }
+  .tick:hover{border-color:var(--accent)}
+  .tick:disabled{cursor:default; opacity:.5}
+  .task[data-state="doing"] .tick{border-color:var(--s-doing); color:var(--s-doing)}
+  .task[data-state="done"] .tick{border-color:var(--s-done); background:var(--s-done); color:#fff}
+  .task[data-state="blocked"] .tick{border-color:var(--s-blocked); color:var(--s-blocked)}
+
+  .t-head{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap}
+  .t-title{font-weight:500; flex:1 1 auto; min-width:180px}
+  .task[data-state="done"] .t-title{color:var(--ink-3); text-decoration:line-through}
+  .t-id{font-family:var(--mono); font-size:11px; color:var(--ink-3)}
+  .pill{
+    font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase;
+    padding:2px 7px; white-space:nowrap;
+  }
+  .pill[data-state="todo"]{background:var(--s-todo-bg); color:var(--s-todo)}
+  .pill[data-state="doing"]{background:var(--s-doing-bg); color:var(--s-doing)}
+  .pill[data-state="done"]{background:var(--s-done-bg); color:var(--s-done)}
+  .pill[data-state="blocked"]{background:var(--s-blocked-bg); color:var(--s-blocked)}
+
+  .t-body{display:flex; flex-direction:column; gap:9px; margin-top:8px}
+  .t-why{font-size:13.5px; color:var(--ink-2); margin:0}
+  .t-why::before{
+    content:"為什麼"; font-family:var(--mono); font-size:10px; letter-spacing:.12em;
+    color:var(--ink-3); margin-right:8px;
+  }
+  .t-how{
+    font-family:var(--mono); font-size:12.5px; line-height:1.6; background:var(--surface-2);
+    border-left:2px solid var(--rule-strong); padding:9px 12px; margin:0;
+    overflow-x:auto; white-space:pre; color:var(--ink);
+  }
+  .t-verify{font-size:13px; color:var(--ink-2); margin:0}
+  .t-verify::before{
+    content:"完成條件"; font-family:var(--mono); font-size:10px; letter-spacing:.12em;
+    color:var(--ink-3); margin-right:8px;
+  }
+  /* ---- 附件 ---- */
+  .att{border:1px solid var(--rule); background:var(--surface-2); margin:0}
+  .att>summary{
+    cursor:pointer; padding:7px 11px; font-family:var(--mono); font-size:11.5px;
+    display:flex; align-items:center; gap:9px; flex-wrap:wrap; color:var(--ink-2);
+  }
+  .att>summary::marker{color:var(--ink-3)}
+  .att-name{color:var(--ink); font-weight:500}
+  .att-tag{
+    font-size:10px; letter-spacing:.1em; text-transform:uppercase;
+    background:var(--s-doing-bg); color:var(--s-doing); padding:1px 6px;
+  }
+  .att-sha{color:var(--ink-3)}
+  .att-body{
+    font-family:var(--mono); font-size:12.5px; line-height:1.6; margin:0;
+    padding:11px; border-top:1px solid var(--rule); overflow-x:auto;
+    white-space:pre; color:var(--ink); background:var(--surface);
+    max-height:340px; overflow-y:auto;
+  }
+  .att-acts{display:flex; gap:14px; padding:8px 11px; border-top:1px solid var(--rule); flex-wrap:wrap}
+  .att-warn{
+    padding:8px 11px; border-top:1px solid var(--rule); font-size:12px;
+    color:var(--s-blocked); background:var(--s-blocked-bg);
+  }
+  .t-foot{
+    display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:4px;
+    font-family:var(--mono); font-size:11px; color:var(--ink-3);
+  }
+  .linkbtn{
+    background:none; border:none; padding:0; cursor:pointer; color:var(--accent);
+    font-family:var(--mono); font-size:11px; text-decoration:underline; text-underline-offset:3px;
+  }
+  .notes{display:flex; flex-direction:column; gap:6px; margin-top:9px; padding-left:12px; border-left:1px dashed var(--rule-strong)}
+  .note{font-size:13px; color:var(--ink-2)}
+  .note b{font-family:var(--mono); font-size:11px; color:var(--ink-3); font-weight:400; margin-right:7px}
+  .noteform{display:flex; gap:7px; margin-top:9px}
+  input[type=text]{
+    flex:1; font-family:var(--sans); font-size:13px; padding:6px 10px;
+    background:var(--surface); color:var(--ink); border:1px solid var(--rule-strong);
+  }
+  input[type=text]:focus-visible, .tick:focus-visible, .linkbtn:focus-visible, button:focus-visible{
+    outline:2px solid var(--accent); outline-offset:2px;
+  }
+  .btn{
+    font-family:var(--sans); font-size:13px; font-weight:500; padding:6px 14px; cursor:pointer;
+    background:var(--accent); color:#fff; border:1px solid var(--accent);
+  }
+
+  .banner{
+    border:1px solid var(--rule-strong); background:var(--surface-2); padding:11px 15px;
+    font-size:13px; color:var(--ink-2); margin-bottom:22px;
+  }
+  .banner b{color:var(--ink)}
+  .who{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--ink-3); margin-top:14px}
+  .who input{max-width:190px}
+  .empty{color:var(--ink-3); font-size:14px; padding:22px 0; border:1px dashed var(--rule-strong); text-align:center}
+  @media (prefers-reduced-motion:reduce){ *{transition:none !important; animation:none !important} }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div class="eyebrow">
+      <span id="doc-kind">工作交接單</span>
+      <span class="sep">/</span>
+      <span id="doc-project">—</span>
+      <span class="sep">/</span>
+      <span id="doc-created">—</span>
+    </div>
+    <h1 id="doc-title">工作交接單</h1>
+    <p class="summary" id="doc-summary">尚未載入交接內容。</p>
+
+    <div class="meta-grid" id="meta-grid"></div>
+
+    <div class="progress">
+      <div class="bar" id="bar"></div>
+      <div class="legend" id="legend"></div>
+    </div>
+
+    <div class="who">
+      <label for="who-input">你是誰</label>
+      <input type="text" id="who-input" placeholder="填入姓名或 agent 名稱" autocomplete="off">
+      <span id="who-hint">勾選與註記會記在這個名字下</span>
+    </div>
+  </header>
+
+  <div class="banner" id="banner" hidden></div>
+
+  <div class="cols">
+    <aside>
+      <h2 class="sec-title"><span>交接脈絡</span><span id="ctx-count"></span></h2>
+      <div class="ctx" id="ctx"></div>
+    </aside>
+    <main>
+      <h2 class="sec-title"><span>待辦事項</span><span id="task-count"></span></h2>
+      <div class="tasks" id="tasks"></div>
+    </main>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STATES = ["todo","doing","done","blocked"];
+  var LABEL = {todo:"待辦", doing:"進行中", done:"完成", blocked:"卡住"};
+  var VAR   = {todo:"--s-todo", doing:"--s-doing", done:"--s-done", blocked:"--s-blocked"};
+
+  // 未接上 db 時顯示的範例,明確標示為範例,絕不冒充真實交接內容
+  var DEMO = {
+    meta:{title:"工作交接單(範例)", project:"—", fromWho:"—", toWho:"—",
+          createdAt:"—", status:"範例",
+          summary:"這是版面範例。實際內容由建立交接單的 skill 寫入資料庫後顯示。"},
+    sections:[
+      {id:"scope", order:1, label:"目標與邊界", body:"要做什麼、明確不做什麼。"},
+      {id:"env",   order:2, label:"環境怎麼跑起來", body:"建置與執行的確切指令。"},
+      {id:"traps", order:3, label:"已知雷區", body:"踩過的坑、不要再走的路。"}
+    ],
+    tasks:[
+      {id:"t1", order:1, title:"範例任務", state:"todo",
+       why:"說明這件事為什麼要做,讓接手的人有判斷依據。",
+       how:"# 可直接複製執行的指令\nnpm run build",
+       verify:"怎樣算做完的可驗證條件。"}
+    ],
+    notes:[]
+  };
+
+  var state = {meta:null, sections:[], tasks:[], notes:[], files:[], db:null, readOnly:false, demo:true};
+  var $ = function(id){ return document.getElementById(id); };
+  var esc = function(s){
+    return String(s == null ? "" : s)
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  };
+  var byOrder = function(a,b){ return (a.order||0)-(b.order||0) || String(a.id).localeCompare(String(b.id)); };
+
+  // ---- 身分:沒有 user capability,由檢視者自填,存在自己瀏覽器 ----
+  var who = "";
+  try { who = localStorage.getItem("handoff.who") || ""; } catch(e){}
+  var whoInput = $("who-input");
+  whoInput.value = who;
+  whoInput.addEventListener("input", function(){
+    who = whoInput.value.trim();
+    try { localStorage.setItem("handoff.who", who); } catch(e){}
+  });
+
+  function banner(html){
+    var el = $("banner");
+    el.innerHTML = html;
+    el.hidden = false;
+  }
+
+  function renderMeta(){
+    var m = state.meta || DEMO.meta;
+    $("doc-title").textContent = m.title || "工作交接單";
+    $("doc-project").textContent = m.project || "—";
+    $("doc-created").textContent = m.createdAt || "—";
+    $("doc-summary").textContent = m.summary || "";
+    var cells = [
+      ["交班", m.fromWho], ["接班", m.toWho],
+      ["狀態", m.status], ["建立於", m.createdAt]
+    ];
+    $("meta-grid").innerHTML = cells.map(function(c){
+      return '<div class="meta-cell"><span class="meta-k">'+esc(c[0])+'</span>'+
+             '<span class="meta-v">'+esc(c[1]||"—")+'</span></div>';
+    }).join("");
+  }
+
+  function renderProgress(){
+    var ts = state.demo ? DEMO.tasks : state.tasks;
+    var counts = {todo:0, doing:0, done:0, blocked:0};
+    ts.forEach(function(t){ if(counts[t.state] != null) counts[t.state]++; else counts.todo++; });
+    var total = ts.length || 1;
+    $("bar").innerHTML = STATES.map(function(s){
+      return '<span style="flex-grow:'+counts[s]+'; background:var('+VAR[s]+')"></span>';
+    }).join("");
+    $("legend").innerHTML = STATES.map(function(s){
+      return '<span><i class="dot" style="background:var('+VAR[s]+')"></i>'+
+             LABEL[s]+' <b>'+counts[s]+'</b></span>';
+    }).join("");
+    $("task-count").textContent = counts.done+" / "+ts.length+" 完成";
+    void total;
+  }
+
+  function renderCtx(){
+    var secs = (state.demo ? DEMO.sections : state.sections).slice().sort(byOrder);
+    $("ctx-count").textContent = secs.length ? secs.length+" 節" : "";
+    if(!secs.length){ $("ctx").innerHTML = '<p class="empty">尚未填寫交接脈絡</p>'; return; }
+    $("ctx").innerHTML = secs.map(function(s){
+      return '<section class="ctx-item"><h3>'+esc(s.label)+'</h3>'+
+             '<p class="ctx-body">'+esc(s.body)+'</p></section>';
+    }).join("");
+  }
+
+  // 附件。腳本類的一律攤開內容給人看——那是這裡唯一真正的防護。
+  function attachments(taskId){
+    var fs = state.files.filter(function(f){ return f.taskId === taskId; })
+      .sort(function(a,b){ return String(a.name||"").localeCompare(String(b.name||"")); });
+    if(!fs.length) return "";
+    return fs.map(function(f){
+      var isScript = f.kind === "script";
+      var kb = f.size ? (f.size < 1024 ? f.size+" B" : (f.size/1024).toFixed(1)+" KB") : "";
+      return '<details class="att">'+
+        '<summary>'+
+          '<span class="att-name">'+esc(f.name)+'</span>'+
+          (isScript ? '<span class="att-tag">腳本 · '+esc(f.interpreter || "?")+'</span>' : '')+
+          (kb ? '<span>'+esc(kb)+'</span>' : '')+
+          (f.sha256 ? '<span class="att-sha">'+esc(String(f.sha256).slice(0,12))+'</span>' : '')+
+        '</summary>'+
+        (isScript ? '<p class="att-warn">這段內容來自共享文件,任何有編輯權的人都能改。'+
+                    '執行前請自己讀過一遍,不要因為它掛在交接單上就當成可信。</p>' : '')+
+        '<pre class="att-body">'+esc(f.body)+'</pre>'+
+        '<div class="att-acts">'+
+          '<button class="linkbtn" data-act="copy" data-file="'+esc(f.id)+'">複製全文</button>'+
+          '<button class="linkbtn" data-act="dl" data-file="'+esc(f.id)+'">下載為 .txt</button>'+
+          (isScript ? '<span style="color:var(--ink-3)">下載後需自行改名並 chmod +x</span>' : '')+
+        '</div>'+
+      '</details>';
+    }).join("");
+  }
+
+  function fileById(id){
+    return state.files.filter(function(f){ return f.id === id; })[0];
+  }
+
+  function flash(btn, msg){
+    var old = btn.textContent;
+    btn.textContent = msg;
+    setTimeout(function(){ btn.textContent = old; }, 1800);
+  }
+
+  function copyFile(id, btn){
+    var f = fileById(id); if(!f) return;
+    var done = function(){ flash(btn, "已複製"); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(f.body).then(done, function(){ copyFallback(f.body, btn, done); });
+    } else { copyFallback(f.body, btn, done); }
+  }
+
+  function copyFallback(text, btn, done){
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch(e){}
+    ta.remove();
+    if(ok) done(); else flash(btn, "請手動選取複製");
+  }
+
+  // .sh 不在下載白名單(gif png jpg jpeg webp mp4 webm txt json md
+  // docx pptx epub csv ttf html svg pdf xlsx),所以一律存成 .txt
+  function downloadFile(id, btn){
+    var f = fileById(id); if(!f) return;
+    window.claude.use("downloads").then(function(dl){
+      if(!dl){ flash(btn, "此處無法下載"); return; }
+      return dl.save({filename: f.name + ".txt", data: f.body}).then(function(){
+        flash(btn, "已存檔");
+      }, function(e){
+        var c = e && e.code;
+        flash(btn, c === "declined" ? "已取消" : (c === "too_large" ? "檔案過大" : "下載失敗"));
+      });
+    }, function(){ flash(btn, "此處無法下載"); });
+  }
+
+  function renderTasks(){
+    var ts = (state.demo ? DEMO.tasks : state.tasks).slice().sort(byOrder);
+    if(!ts.length){ $("tasks").innerHTML = '<p class="empty">尚未列出待辦事項</p>'; return; }
+    var ro = state.readOnly || state.demo;
+    $("tasks").innerHTML = ts.map(function(t){
+      var st = STATES.indexOf(t.state) >= 0 ? t.state : "todo";
+      var mark = st === "done" ? "✓" : (st === "blocked" ? "!" : (st === "doing" ? "●" : ""));
+      var notes = state.notes.filter(function(n){ return n.taskId === t.id; })
+        .sort(function(a,b){ return String(a.createdAt||"").localeCompare(String(b.createdAt||"")); });
+      return '<article class="task" data-state="'+st+'" data-id="'+esc(t.id)+'">'+
+        '<button class="tick" data-act="cycle" data-id="'+esc(t.id)+'"'+(ro?" disabled":"")+
+          ' aria-label="切換狀態:'+esc(t.title)+'" title="點一下換狀態">'+mark+'</button>'+
+        '<div class="t-head">'+
+          '<span class="t-title">'+esc(t.title)+'</span>'+
+          '<span class="pill" data-state="'+st+'">'+LABEL[st]+'</span>'+
+          '<span class="t-id">'+esc(t.id)+'</span>'+
+        '</div>'+
+        '<div class="t-body">'+
+          (t.why ? '<p class="t-why">'+esc(t.why)+'</p>' : '')+
+          (t.how ? '<pre class="t-how">'+esc(t.how)+'</pre>' : '')+
+          (t.verify ? '<p class="t-verify">'+esc(t.verify)+'</p>' : '')+
+          attachments(t.id)+
+          (notes.length ? '<div class="notes">'+notes.map(function(n){
+              return '<div class="note"><b>'+esc(n.author||"匿名")+' '+esc((n.createdAt||"").slice(0,16))+
+                     '</b>'+esc(n.body)+'</div>';
+            }).join("")+'</div>' : '')+
+          '<div class="t-foot">'+
+            (t.updatedAt ? '<span>最後更新 '+esc(String(t.updatedAt).slice(0,16))+
+                           (t.updatedBy?' · '+esc(t.updatedBy):'')+'</span>' : '')+
+            (ro ? '' : '<button class="linkbtn" data-act="note" data-id="'+esc(t.id)+'">加註記</button>')+
+          '</div>'+
+        '</div>'+
+      '</article>';
+    }).join("");
+  }
+
+  function render(){ renderMeta(); renderProgress(); renderCtx(); renderTasks(); }
+
+  // ---- 寫入 ----
+  function onWriteError(e){
+    var code = e && e.code;
+    if(code === "not_granted" || code === "invalid_argument" || code === "revoked"){
+      state.readOnly = true;
+      banner("<b>唯讀檢視。</b>你可以讀這份交接單,但沒有編輯權,勾選與註記不會被保存。請向建立者要編輯權限。");
+      render();
+    } else if(code === "resource_exhausted" || code === "unavailable"){
+      banner("<b>暫時無法儲存。</b>稍待片刻再操作;這次的變更沒有寫進去。");
+    } else {
+      banner("<b>儲存失敗。</b>"+esc((e && e.message) || "未知錯誤"));
+    }
+  }
+
+  function cycle(id){
+    var t = state.tasks.filter(function(x){ return x.id === id; })[0];
+    if(!t || !state.db) return;
+    var order = ["todo","doing","done","blocked"];
+    var next = order[(order.indexOf(t.state) + 1) % order.length];
+    t.state = next; render();  // 樂觀更新,onSnapshot 會覆蓋為真相
+    state.db.doc("tasks/"+id).update({
+      state: next,
+      updatedAt: new Date().toISOString(),
+      updatedBy: who || "未具名"
+    }).catch(onWriteError);
+  }
+
+  function noteForm(id){
+    var art = document.querySelector('.task[data-id="'+CSS.escape(id)+'"] .t-body');
+    if(!art || art.querySelector(".noteform")) return;
+    var f = document.createElement("form");
+    f.className = "noteform";
+    f.innerHTML = '<input type="text" placeholder="進度、卡在哪、給下一個人的提醒" required>'+
+                  '<button class="btn" type="submit">記下</button>';
+    f.addEventListener("submit", function(ev){
+      ev.preventDefault();
+      var body = f.querySelector("input").value.trim();
+      if(!body || !state.db) return;
+      f.remove();
+      state.db.collection("notes").add({
+        taskId:id, body:body, author: who || "未具名", createdAt:new Date().toISOString()
+      }).catch(onWriteError);
+    });
+    art.appendChild(f);
+    f.querySelector("input").focus();
+  }
+
+  document.addEventListener("click", function(ev){
+    var b = ev.target.closest("[data-act]");
+    if(!b) return;
+    if(b.dataset.act === "cycle") cycle(b.dataset.id);
+    if(b.dataset.act === "note") noteForm(b.dataset.id);
+    if(b.dataset.act === "copy") copyFile(b.dataset.file, b);
+    if(b.dataset.act === "dl") downloadFile(b.dataset.file, b);
+  });
+
+  // ---- 先畫範例,連上 db 後換成真實資料 ----
+  render();
+
+  (async function(){
+    var db = null;
+    try { db = await window.claude.use("db"); } catch(e){ db = null; }
+    if(!db){
+      banner("<b>離線預覽。</b>這是版面範例,沒有連上資料庫。在 claude.ai 開啟這個 artifact 才會顯示真實交接內容。");
+      return;
+    }
+    state.db = db;
+
+    // 終止性錯誤:訂閱死掉後不會再有資料,一定要說出來,不能沉默
+    function fail(e){
+      var code = (e && e.code) || "unknown";
+      console.error("[handoff] 訂閱中止:", code, e && e.message);
+      if(code === "revoked"){
+        banner("<b>連線已中止。</b>畫面停在最後一次同步的內容,重新整理可再試。");
+      } else if(code === "resource_exhausted"){
+        banner("<b>超出用量上限。</b>資料可能不完整,稍後重新整理。");
+      } else {
+        banner("<b>資料訂閱中止("+esc(code)+")。</b>畫面可能不是最新的,重新整理可再試。");
+      }
+    }
+
+    // db 回傳的 snapshot 資料是凍結的,嚴格模式下直接改寫會拋 TypeError。
+    // 一律複製成新物件再加上 id。
+    function rows(snap){
+      return snap.docs.map(function(d){
+        var o = Object.assign({}, d.data() || {});
+        o.id = d.id;
+        return o;
+      });
+    }
+
+    db.doc("meta/handoff").onSnapshot(function(snap){
+      if(snap.exists){ state.meta = snap.data(); state.demo = false; }
+      render();
+    }, fail);
+
+    db.collection("sections").onSnapshot(function(snap){
+      state.sections = rows(snap);
+      if(state.sections.length) state.demo = false;
+      render();
+    }, fail);
+
+    db.collection("tasks").onSnapshot(function(snap){
+      state.tasks = rows(snap);
+      if(state.tasks.length) state.demo = false;
+      render();
+    }, fail);
+
+    db.collection("notes").onSnapshot(function(snap){
+      state.notes = rows(snap);
+      render();
+    }, fail);
+
+    db.collection("files").onSnapshot(function(snap){
+      state.files = rows(snap);
+      render();
+    }, fail);
+  })();
+})();
+</script>

@@ -1,0 +1,9 @@
+{
+  "name": "check-list",
+  "version": "0.4.0",
+  "description": "工作交接單。把工作寫成可交接的清單發布成連結,交給另一個 agent 或人接手執行;也能從連結接手並回寫進度。",
+  "author": {
+    "name": "sakilu",
+    "email": "5828799+sakilu@users.noreply.github.com"
+  }
+}
