@@ -43,12 +43,25 @@ git ls-remote git@github.com:sakilu/skill-check-list.git    # 能列出 ref 才�
 
 也可以直接說「把這個交接出去」「接手這份工作」,skill 會自己被觸發。
 
+## 兩種交接單
+
+平台對 artifact 的兩種能力有不同限制,所以交接單分兩種模式,不能混用:
+
+| | 組織內部版(預設) | 對外分享版 |
+|---|---|---|
+| 接手者 | 同組織登入成員 | 組織外的人 |
+| agent 能不能結構化讀寫 | 能 | **不能**,只有瀏覽器裡的人點擊能寫回 |
+| 平台能力 | `db` | `artifact`(自我發布) |
+
+組織外的 **agent** 交接不了——這是平台限制,不是還沒做的功能。詳見
+`plugins/check-list/skills/check-list/references/integration.md`。
+
 ## 兩個限制,裝之前先知道
 
 1. **交接單發布時一律私有。** 要由擁有者在 artifact 畫面的分享選單設成可編輯,
    接手者才開得了、寫得進去。這一步無法由工具代勞。
-2. **交接單是組織內部限定,不能公開分享。** 這是宣告 `db` 能力的 artifact 的平台限制:
-   讀寫的人都必須是同組織的登入成員。要交給組織外的人,這條路走不通。
+2. **組織內部版不能公開分享。** 這是宣告 `db` 能力的 artifact 的平台限制:
+   讀寫的人都必須是同組織的登入成員。要交給組織外的人,用對外分享版。
 
 ## 改完之後怎麼生效
 
@@ -105,7 +118,10 @@ skill-check-list/
    ├─ templates/                            資料層:交接單該長什麼樣
    │  ├─ handoff.yaml                          骨架,一份合格交接單至少要交代哪些節
    │  └─ example-verify.sh                     可夾帶驗證腳本的寫法範例
-   ├─ assets/handoff-page.html              交接單頁面,純資料驅動,發布成 artifact
+   ├─ assets/
+   │  ├─ handoff-page.html                  組織內部版頁面,發布成 db artifact
+   │  └─ handoff-external.html              對外分享版範本,發布前要先套版填資料
+   ├─ scripts/gen-external.py               套版工具:把 state JSON 填進對外版範本
    ├─ skills/check-list/
    │  ├─ SKILL.md                           執行層:交出去 / 接手兩個模式
    │  └─ references/integration.md             其他 skill 作者怎麼接、資料契約
@@ -116,8 +132,14 @@ skill-check-list/
 **為什麼把骨架抽成資料層**:新增一種工作類型的交接規則只是加一個 yaml,
 不用動 SKILL.md,也不會把用不到的內容灌進別人的 context。
 
-**為什麼頁面是純資料驅動**:同一份 HTML 服務所有交接單,內容全部放在 artifact 的 db。
-人在網頁上勾選,agent 用 `read_db` / `write_db` 讀寫,兩邊是同一份狀態而不是兩份拷貝。
+**為什麼組織內部版頁面是純資料驅動**:同一份 HTML 服務所有交接單,內容全部放在
+artifact 的 db。人在網頁上勾選,agent 用 `read_db` / `write_db` 讀寫,
+兩邊是同一份狀態而不是兩份拷貝。
+
+**為什麼對外分享版要先套版**:`artifact`(自我發布)能力沒有資料庫,狀態只能
+直接寫進頁面本身。`gen-external.py` 用鎖定標籤邊界的正則替換套版——
+不要自己手刻整檔字串取代,已經實測踩過坑:整檔取代連範本自己程式碼裡
+提到佔位字串名稱的地方都會被誤傷,炸掉 JS 語法讓整頁空白。
 
 ## 資料契約
 
