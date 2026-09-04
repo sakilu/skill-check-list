@@ -151,27 +151,20 @@ artifact 的 db。人在網頁上勾選,agent 用 `read_db` / `write_db` 讀寫,
 | `sections/<id>` | `order` `label` `body` |
 | `tasks/<id>` | `order` `title` `why` `how` `verify` `state` `updatedAt` `updatedBy` |
 | `notes/<id>` | `taskId` `body` `author` `createdAt` |
-| `files/<id>` | `name` `taskId` `kind` `interpreter` `body` `sha256` `size` `purpose` `addedBy` `addedAt` |
+| `files/<id>` | `name` `url` `kind` `interpreter` `sha256` `size` `purpose` `taskId` `addedBy` `addedAt` |
 
 `state` 只能是 `todo` / `doing` / `done` / `blocked`。
 完整說明見 `plugins/check-list/skills/check-list/references/integration.md`。
 
-## 上下文成本
+## 檔案夾帶:上傳到 Drive,不內嵌
 
-實測(七項任務、六節脈絡、一支 1.8 KB 夾帶腳本的交接單):
+檔案**不內嵌**進交接單——內嵌內容綁死 `db` 能力,組織外的人連交接單本身都開不了。
+改成用 `mcp__google-file__*`(使用者自己的 MCP 伺服器,上傳到 Google Drive)
+上傳檔案並設 `link_share: true`,交接單裡的 `files/<id>` 只存連結與 sha256。
 
-| 項目 | 成本 |
-|---|---|
-| 每個 session 都付 | ~225 tok |
-| skill 觸發載入 SKILL.md | ~2.6k tok |
-| 接手時讀取交接單內容 | ~2.5k tok |
-
-讀取的 2.5k 裡,**那支 1.8 KB 的腳本就佔 27%** —— 附件是唯一會失控的部分。
-所以 `kind: script` 上限訂在 16 KB(約 400 行),而且:
-
-- 寫入大內容用 `write_db` 的 `file_path`,body 從磁碟直接進 db,不過上下文
-- 讀取附件用 `read_db` 的 `out_dir` 加 `where taskId`,回傳檔名而非內容
-- 絕不 `list` 整個 `files` 集合
+檔案下載區是**集中一區**列示所有檔案,不分散在各任務底下;`taskId` 只是給接手者
+看的參考標籤。因為不再內嵌內容,`files` 集合可以直接整個 `list`,不必擔心
+撐爆上下文。完整流程與腳本執行的安全規則見 SKILL.md 的〈夾帶檔案〉。
 
 ## 這個 plugin 刻意不做的事
 

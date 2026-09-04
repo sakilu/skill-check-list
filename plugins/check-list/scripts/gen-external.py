@@ -13,8 +13,9 @@ state.json 的結構見 skills/check-list/references/integration.md 的資料契
 """
 import io, json, re, sys, argparse
 
-# 對外版沒有 db,每個附件都會跟著整份文件一起傳輸與重新發布,
-# 不像 db 版只有被讀到的文件才算數。這裡給一個軟性警告,不是硬限制。
+# 對外版沒有 db,整份 state(tasks/sections/notes/files 連結記錄)都跟著文件
+# 一起傳輸與重新發布,不像 db 版只有被讀到的文件才算數。files 現在只存連結,
+# 不再內嵌內容,所以正常情況下不會撐大;這裡給一個軟性警告,不是硬限制。
 WARN_BYTES = 200_000
 
 

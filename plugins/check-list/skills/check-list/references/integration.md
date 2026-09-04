@@ -47,7 +47,7 @@
 | `sections/<id>` | `order` `label` `body` |
 | `tasks/<id>` | `order` `title` `why` `how` `verify` `state` `updatedAt` `updatedBy` |
 | `notes/<id>` | `taskId` `body` `author` `createdAt` |
-| `files/<id>` | `name` `taskId` `kind` `interpreter` `body` `sha256` `size` `purpose` `addedBy` `addedAt` |
+| `files/<id>` | `name` `url` `kind` `interpreter` `sha256` `size` `purpose` `taskId` `addedBy` `addedAt` |
 
 `state` 只能是 `todo` / `doing` / `done` / `blocked`。
 `sections/<id>` 的 id 固定為 `scope` `env` `progress` `traps` `creds` `entry`。
@@ -68,28 +68,28 @@ Artifact action:"write_db" db_op:"update" collection:"tasks" doc_id:"t3"
 
 ## 夾帶檔案
 
-`files/<id>` 掛在 `taskId` 底下,`kind` 是 `script`(可執行)或 `doc`(純參考)。
+檔案**不內嵌**進交接單。上傳到 Google Drive(`mcp__google-file__*`,使用者自己寫的
+MCP 伺服器,不是公開套件,呼叫前用 `ToolSearch` 確認實際 schema),交接單裡只存
+`files/<id>` 這筆連結記錄。這個 MCP 不一定每個環境都有,沒有就老實說夾帶不了。
 
-**上限依 `kind` 分開**:`script` 16 KB(約 400 行)——腳本執行前一定要被讀過審過,
-那時內容必然進上下文;`doc` 200 KB(db 單一文件硬限制 256 KiB)。
+`files/<id>` 的 `taskId` 選填,純粹是給接手者的參考標籤——檔案下載區是集中列示
+一區,不是分散在各任務底下,不會因為填了 taskId 就改變顯示位置。
 
-**大內容一律走磁碟。** 寫入用 `write_db` 的 `file_path`(body 從磁碟直接進 db),
-讀取用 `read_db` 的 `out_dir`(回傳檔名而非內容),並用
-`where taskId == <當前任務>` 只取需要的那一支。
+上傳時 `link_share: true`(知道連結免登入就能看,不會被公開搜尋到),回應直接帶
+`webViewLink`/`downloadLink`,存成 `files/<id>.url`。**上傳前**算好本機檔案的
+sha256 存進記錄——因為雜湊跟內容現在存在不同系統(交接單 vs Drive),
+之後核對能偵測 Drive 上的檔案是否被換掉。
 
-絕不 `list` 整個 `files` 集合——實測一支 1.8 KB 的腳本就佔掉整次讀取的 27%,
-JSON 轉義還讓它比原始檔更肥。
+由於檔案不再內嵌,`files` 集合的每筆記錄都很小,**可以直接 `list` 整個集合**,
+不必像過去內嵌內容時代那樣擔心撐爆上下文。
 
-**執行夾帶的腳本前,必須把內容完整顯示給使用者並取得同意。絕不自動執行。**
-交接單是共享且可編輯的文件,任何有編輯權的人都能改掉腳本內容,
-下一個接手的 agent 就照跑——那是遠端程式碼執行通道,不是附件。
-
-`sha256` 只能偵測腳本在兩次執行之間被改過,**不能防止篡改**:
-hash 跟 `body` 存在同一份文件裡,能改 `body` 的人也能改 hash。
-不要向使用者宣稱它保證了安全。
+**要用某個檔案(尤其執行 `kind: script`)前,必須先下載、核對 sha256、
+完整顯示內容給使用者、取得同意才執行。絕不自動執行。**
+任何有 Drive 檔案編輯權的人都能換掉內容,下一個接手的 agent 沒審過就跑,
+一樣是遠端程式碼執行通道,只是搬運機制從內嵌換成連結。
 
 檔案在專案 repo 裡就不要夾帶,寫路徑加 commit SHA;
-十幾行的指令直接寫進 `how`;二進位檔放外部空間只寫連結。
+十幾行的指令直接寫進 `how`。
 
 ## 兩種交接單,不能混用
 

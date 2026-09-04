@@ -146,29 +146,34 @@
     content:"完成條件"; font-family:var(--mono); font-size:10px; letter-spacing:.12em;
     color:var(--ink-3); margin-right:8px;
   }
-  /* ---- 附件 ---- */
-  .att{border:1px solid var(--rule); background:var(--surface-2); margin:0}
-  .att>summary{
-    cursor:pointer; padding:7px 11px; font-family:var(--mono); font-size:11.5px;
-    display:flex; align-items:center; gap:9px; flex-wrap:wrap; color:var(--ink-2);
+  /* ---- 檔案下載區(集中一區,不分散在各任務裡) ---- */
+  .files-sec{margin-top:40px}
+  .files{display:flex; flex-direction:column; gap:8px}
+  .file{
+    display:grid; grid-template-columns:auto 1fr auto; gap:4px 14px; align-items:baseline;
+    background:var(--surface); border:1px solid var(--rule); padding:11px 14px;
   }
-  .att>summary::marker{color:var(--ink-3)}
-  .att-name{color:var(--ink); font-weight:500}
-  .att-tag{
-    font-size:10px; letter-spacing:.1em; text-transform:uppercase;
-    background:var(--s-doing-bg); color:var(--s-doing); padding:1px 6px;
+  .file-link{
+    grid-column:1; font-weight:500; color:var(--accent); text-decoration:none;
+    text-underline-offset:3px;
   }
-  .att-sha{color:var(--ink-3)}
-  .att-body{
-    font-family:var(--mono); font-size:12.5px; line-height:1.6; margin:0;
-    padding:11px; border-top:1px solid var(--rule); overflow-x:auto;
-    white-space:pre; color:var(--ink); background:var(--surface);
-    max-height:340px; overflow-y:auto;
+  .file-link:hover{text-decoration:underline}
+  .file-tag{
+    font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase;
+    background:var(--s-doing-bg); color:var(--s-doing); padding:1px 6px; white-space:nowrap;
   }
-  .att-acts{display:flex; gap:14px; padding:8px 11px; border-top:1px solid var(--rule); flex-wrap:wrap}
-  .att-warn{
-    padding:8px 11px; border-top:1px solid var(--rule); font-size:12px;
-    color:var(--s-blocked); background:var(--s-blocked-bg);
+  .file-meta{
+    grid-column:1/-1; font-family:var(--mono); font-size:11px; color:var(--ink-3);
+    display:flex; gap:12px; flex-wrap:wrap;
+  }
+  .file-purpose{grid-column:1/-1; font-size:13px; color:var(--ink-2); margin:2px 0 0}
+  .file-task{
+    font-size:10px; letter-spacing:.06em; background:var(--surface-2); color:var(--ink-3);
+    padding:1px 6px; white-space:nowrap;
+  }
+  .file-warn{
+    grid-column:1/-1; font-size:12px; color:var(--s-blocked); background:var(--s-blocked-bg);
+    padding:6px 9px; margin-top:2px;
   }
   .t-foot{
     display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:4px;
@@ -243,6 +248,11 @@
       <div class="tasks" id="tasks"></div>
     </main>
   </div>
+
+  <section class="files-sec">
+    <h2 class="sec-title"><span>檔案下載區</span><span id="files-count"></span></h2>
+    <div class="files" id="files"></div>
+  </section>
 </div>
 
 <script>
@@ -338,75 +348,33 @@
     }).join("");
   }
 
-  // 附件。腳本類的一律攤開內容給人看——那是這裡唯一真正的防護。
-  function attachments(taskId){
-    var fs = state.files.filter(function(f){ return f.taskId === taskId; })
-      .sort(function(a,b){ return String(a.name||"").localeCompare(String(b.name||"")); });
-    if(!fs.length) return "";
-    return fs.map(function(f){
+  // 檔案是外部連結(如 Google Drive),不是內嵌內容——這裡只負責列出、
+  // 顯示狀態、附上提醒,不做複製/下載,開連結交給瀏覽器原生行為就好。
+  function renderFiles(){
+    var fs = state.files.slice().sort(function(a,b){
+      return String(a.name||"").localeCompare(String(b.name||""));
+    });
+    $("files-count").textContent = fs.length ? fs.length+" 個" : "";
+    if(!fs.length){ $("files").innerHTML = '<p class="empty">尚未夾帶檔案</p>'; return; }
+    $("files").innerHTML = fs.map(function(f){
       var isScript = f.kind === "script";
       var kb = f.size ? (f.size < 1024 ? f.size+" B" : (f.size/1024).toFixed(1)+" KB") : "";
-      return '<details class="att">'+
-        '<summary>'+
-          '<span class="att-name">'+esc(f.name)+'</span>'+
-          (isScript ? '<span class="att-tag">腳本 · '+esc(f.interpreter || "?")+'</span>' : '')+
+      return '<div class="file">'+
+        '<a class="file-link" href="'+esc(f.url)+'" target="_blank" rel="noopener noreferrer">'+
+          esc(f.name)+'</a>'+
+        (isScript ? '<span class="file-tag">腳本'+(f.interpreter?' · '+esc(f.interpreter):'')+'</span>' : '<span></span>')+
+        '<span></span>'+
+        '<div class="file-meta">'+
           (kb ? '<span>'+esc(kb)+'</span>' : '')+
-          (f.sha256 ? '<span class="att-sha">'+esc(String(f.sha256).slice(0,12))+'</span>' : '')+
-        '</summary>'+
-        (isScript ? '<p class="att-warn">這段內容來自共享文件,任何有編輯權的人都能改。'+
-                    '執行前請自己讀過一遍,不要因為它掛在交接單上就當成可信。</p>' : '')+
-        '<pre class="att-body">'+esc(f.body)+'</pre>'+
-        '<div class="att-acts">'+
-          '<button class="linkbtn" data-act="copy" data-file="'+esc(f.id)+'">複製全文</button>'+
-          '<button class="linkbtn" data-act="dl" data-file="'+esc(f.id)+'">下載為 .txt</button>'+
-          (isScript ? '<span style="color:var(--ink-3)">下載後需自行改名並 chmod +x</span>' : '')+
+          (f.sha256 ? '<span>sha256 '+esc(String(f.sha256).slice(0,12))+'</span>' : '')+
+          (f.taskId ? '<span class="file-task">關聯任務 '+esc(f.taskId)+'</span>' : '')+
+          (f.addedBy ? '<span>'+esc(f.addedBy)+(f.addedAt?' · '+esc(String(f.addedAt).slice(0,10)):'')+'</span>' : '')+
         '</div>'+
-      '</details>';
+        (f.purpose ? '<p class="file-purpose">'+esc(f.purpose)+'</p>' : '')+
+        (isScript ? '<p class="file-warn">這是 Drive 上的檔案,任何有編輯權的人都能換掉內容。'+
+                    '執行前先下載讀過一遍、核對 sha256,不要因為它掛在交接單上就當成可信。</p>' : '')+
+      '</div>';
     }).join("");
-  }
-
-  function fileById(id){
-    return state.files.filter(function(f){ return f.id === id; })[0];
-  }
-
-  function flash(btn, msg){
-    var old = btn.textContent;
-    btn.textContent = msg;
-    setTimeout(function(){ btn.textContent = old; }, 1800);
-  }
-
-  function copyFile(id, btn){
-    var f = fileById(id); if(!f) return;
-    var done = function(){ flash(btn, "已複製"); };
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(f.body).then(done, function(){ copyFallback(f.body, btn, done); });
-    } else { copyFallback(f.body, btn, done); }
-  }
-
-  function copyFallback(text, btn, done){
-    var ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed"; ta.style.opacity = "0";
-    document.body.appendChild(ta); ta.select();
-    var ok = false;
-    try { ok = document.execCommand("copy"); } catch(e){}
-    ta.remove();
-    if(ok) done(); else flash(btn, "請手動選取複製");
-  }
-
-  // .sh 不在下載白名單(gif png jpg jpeg webp mp4 webm txt json md
-  // docx pptx epub csv ttf html svg pdf xlsx),所以一律存成 .txt
-  function downloadFile(id, btn){
-    var f = fileById(id); if(!f) return;
-    window.claude.use("downloads").then(function(dl){
-      if(!dl){ flash(btn, "此處無法下載"); return; }
-      return dl.save({filename: f.name + ".txt", data: f.body}).then(function(){
-        flash(btn, "已存檔");
-      }, function(e){
-        var c = e && e.code;
-        flash(btn, c === "declined" ? "已取消" : (c === "too_large" ? "檔案過大" : "下載失敗"));
-      });
-    }, function(){ flash(btn, "此處無法下載"); });
   }
 
   function renderTasks(){
@@ -430,7 +398,6 @@
           (t.why ? '<p class="t-why">'+esc(t.why)+'</p>' : '')+
           (t.how ? '<pre class="t-how">'+esc(t.how)+'</pre>' : '')+
           (t.verify ? '<p class="t-verify">'+esc(t.verify)+'</p>' : '')+
-          attachments(t.id)+
           (notes.length ? '<div class="notes">'+notes.map(function(n){
               return '<div class="note"><b>'+esc(n.author||"匿名")+' '+esc((n.createdAt||"").slice(0,16))+
                      '</b>'+esc(n.body)+'</div>';
@@ -445,7 +412,7 @@
     }).join("");
   }
 
-  function render(){ renderMeta(); renderProgress(); renderCtx(); renderTasks(); }
+  function render(){ renderMeta(); renderProgress(); renderCtx(); renderTasks(); renderFiles(); }
 
   // ---- 寫入 ----
   function onWriteError(e){
@@ -499,8 +466,6 @@
     if(!b) return;
     if(b.dataset.act === "cycle") cycle(b.dataset.id);
     if(b.dataset.act === "note") noteForm(b.dataset.id);
-    if(b.dataset.act === "copy") copyFile(b.dataset.file, b);
-    if(b.dataset.act === "dl") downloadFile(b.dataset.file, b);
   });
 
   // ---- 先畫範例,連上 db 後換成真實資料 ----

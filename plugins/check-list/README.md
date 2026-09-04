@@ -35,12 +35,18 @@
 | 檔案 | 用途 |
 |---|---|
 | `templates/handoff.yaml` | 交接單骨架:至少要交代哪些節、每項任務要有哪些欄位 |
-| `templates/example-verify.sh` | 可夾帶驗證腳本的寫法範例 |
+| `templates/example-verify.sh` | 驗證腳本的寫法範例(要夾帶時上傳到 Drive,不內嵌) |
 | `assets/handoff-page.html` | 組織內部版頁面(db),同一份服務所有交接單 |
 | `assets/handoff-external.html` | 對外分享版範本(artifact),發布前要先套版 |
 | `scripts/gen-external.py` | 套版工具,把 state JSON 填進對外版範本 |
 
 任務的 `verify` 欄位要用**該專案實際能跑的指令**,不內建語言別範本——
 套來的通用指令跑不起來,比沒有驗證條件更糟。
+
+## 檔案夾帶
+
+檔案不內嵌進交接單,上傳到 Google Drive(`mcp__google-file__*`)取得連結,
+交接單只存 `files/<id>` 這筆連結記錄,集中列在「檔案下載區」,不分散在各任務裡。
+完整流程與腳本執行前的安全規則見 SKILL.md 的〈夾帶檔案〉。
 
 資料契約與其他 skill 的接法見 `skills/check-list/references/integration.md`。
